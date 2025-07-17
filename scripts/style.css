@@ -1,0 +1,190 @@
+/* For things that need center-alignment */
+.alignCenter {
+    text-align: center !important;
+}
+
+/* Video Background */
+video {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 1 !important;
+}
+
+
+/* Modal styles */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 12; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; 
+    height: 100%;
+    overflow: auto;
+    background-color: rgb(0,0,0);
+    background-color: rgba(0,0,0,0.4); 
+  }
+  
+  /* Modal Content/Box */
+  .modal-content {
+    
+    background-color: #fefefe;
+    margin: 15% auto; 
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+  }
+
+  .yearName {
+    color:#858585;
+  }
+  
+  /* Overlay */ 
+  #modalOverlay {
+    display: none;
+    position: fixed; 
+    z-index: 11;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgb(0,0,0);
+    background-color: rgba(0, 0, 0, 0.616);
+  }
+
+/* Styles for the settings form */
+.form-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh; /* Ensure the container takes up the full viewport height */
+    background-color: rgb(69, 69, 69);
+    color: white;
+    z-index: 1;
+}
+
+#settingsForm {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Center form elements horizontally */
+    background-color: rgb(57, 57, 57);
+    padding: 20px;
+    z-index: 1;
+    text-align: center;
+}
+
+#settingsForm > * {
+    margin-bottom: 10px; /* Add some spacing between form elements */
+}
+
+/* Hide the copy and start buttons until they are needed */
+#copy {
+    display:none;
+}
+
+#start {
+    display:none;
+}
+
+#stop {
+    display:none;
+}
+
+/* Client Instructions */
+#startContainer {
+    position: absolute;
+    top: 0px;
+    bottom: 0px;
+    left: 0px;
+    right: 0px;
+    color:white;
+    text-align: center;
+    z-index: 1;
+}
+
+#startContainer a {
+    color:#81abf8;
+}
+
+#startContainer h1 {
+    z-index: 9 !important;
+    position: relative;
+}
+#startContainer h2 {
+    z-index: 9 !important;
+    position: absolute;
+    bottom: 20px;
+    left: 0px;
+    right: 0px;
+}
+
+#timeoutInput {
+    z-index: 10 !important;
+    position:absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -500%);
+}
+
+#myButton {
+    position: absolute;
+    z-index: 10 !important;
+    top: 50%;
+    left: 50%;
+    padding: 40px;
+    transform: translate(-50%, -50%);
+        
+    /*
+    z-index: 10 !important;
+    display: block;
+    position: relative;
+    margin: 0 auto !important;
+    padding: 40px;
+    transform: translateY(400%);
+    */
+}
+/* /Client Instructions */
+
+
+/* The Target Elements */
+#targets {
+    position: absolute;
+    top: 0px;
+    bottom: 0px;
+    left: 0px;
+    right: 0px;
+    z-index: 10 !important;
+}
+#target1 {
+    /*float:left;*/
+    color:white;
+    position:absolute;
+    left:50px;
+}
+#target2 {
+    /*float:right;*/
+    color:white;
+    position:absolute;
+    right: 50px;
+}
+.target {
+    height:250px;
+    width:250px;
+}
+/* /The Target Elements */
+
+/* Attach the current year to the bottom of the page */
+#bottomYearName {
+    position: absolute;
+    bottom: 0px;
+    left: 50%;
+    bottom: 0;
+    transform: translateX(-50%);
+    z-index: 9;
+    color:#858585;
+}
