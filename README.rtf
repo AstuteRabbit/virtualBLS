@@ -1,127 +1,37 @@
-{\rtf1\ansi\ansicpg1252\cocoartf2868
-\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\froman\fcharset0 Times-Bold;\f1\froman\fcharset0 Times-Roman;\f2\froman\fcharset0 Times-Italic;
-\f3\fmodern\fcharset0 Courier-Bold;\f4\fmodern\fcharset0 Courier;}
-{\colortbl;\red255\green255\blue255;\red0\green0\blue0;\red0\green0\blue233;}
-{\*\expandedcolortbl;;\cssrgb\c0\c0\c0;\cssrgb\c0\c0\c93333;}
-{\*\listtable{\list\listtemplateid1\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat0\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid1\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid1}
-{\list\listtemplateid2\listhybrid{\listlevel\levelnfc0\levelnfcn0\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{decimal\}}{\leveltext\leveltemplateid101\'01\'00;}{\levelnumbers\'01;}\fi-360\li720\lin720 }{\listname ;}\listid2}
-{\list\listtemplateid3\listhybrid{\listlevel\levelnfc0\levelnfcn0\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{decimal\}.}{\leveltext\leveltemplateid201\'02\'00.;}{\levelnumbers\'01;}\fi-360\li720\lin720 }{\listname ;}\listid3}}
-{\*\listoverridetable{\listoverride\listid1\listoverridecount0\ls1}{\listoverride\listid2\listoverridecount0\ls2}{\listoverride\listid3\listoverridecount0\ls3}}
-\margl1440\margr1440\vieww15820\viewh14520\viewkind0
-\deftab720
-\pard\pardeftab720\sa321\partightenfactor0
+VirtualBLS.net - Core Therapy Game Files
 
-\f0\b\fs48 \cf0 \expnd0\expndtw0\kerning0
-\outl0\strokewidth0 \strokec2 VirtualBLS.net - Core Therapy Game Files\
-\pard\pardeftab720\sa240\partightenfactor0
+This repository contains the custom game logic and WordPress integration files for virtualBLS.net, a web-based video game adaptation of EMDR (Eye Movement Desensitization and Reprocessing) therapy designed for use by trauma therapists.
 
-\f1\b0\fs24 \cf0 This repository contains the custom game logic and WordPress integration files for 
-\f0\b virtualBLS.net
-\f1\b0 , a web-based video game adaptation of EMDR (Eye Movement Desensitization and Reprocessing) therapy designed for use by trauma therapists.\
-\pard\pardeftab720\sa298\partightenfactor0
+License
+This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
+The AGPL is a "copyleft" license designed for network-based software. If you run a modified version of this software on a server and let users interact with it over a network, you must make your modified source code available to those users. This ensures that the tool remains open and transparent for the clinical community.
 
-\f0\b\fs36 \cf0 License\
-\pard\pardeftab720\sa240\partightenfactor0
+Note: This license covers the software logic (PHP/JavaScript) only. It does not include proprietary third-party plugins, branding, or user-specific clinical data.
 
-\f1\b0\fs24 \cf0 This project is licensed under the 
-\f0\b GNU Affero General Public License v3.0 (AGPL-3.0)
-\f1\b0 .\
-The AGPL is a "copyleft" license designed for network-based software. If you run a modified version of this software on a server and let users interact with it over a network, you must make your modified source code available to those users. This ensures that the tool remains open and transparent for the clinical community.\
-\pard\pardeftab720\sa240\partightenfactor0
+Project Structure
+This repository includes:
+    •   functions.php: Custom PHP hooks and directory-generation logic used in the WordPress functions.php file.
+    •   /custom/: The core JavaScript (jQuery/Ajax) and CSS files that drive the EMDR game mechanics.
+    •   /templates/: The directory structures and entry files served to users upon registration.
 
-\f2\i \cf0 Note: This license covers the software logic (PHP/JavaScript) only. It does not include proprietary third-party plugins, branding, or user-specific clinical data.
-\f1\i0 \
-\pard\pardeftab720\sa298\partightenfactor0
+Prerequisites
+To run this tool, you will need a standard WordPress installation with the following environment:
+    1   CMS: WordPress
+    2   Theme: Twenty Twenty-Four (or a child theme thereof)
+    3   Page Builder: Elementor
+    4   Membership/Subscription: Paid Memberships Pro
+    5   Some version of Jquery.min.js. Place it in custom/resources/scripts.
 
-\f0\b\fs36 \cf0 Project Structure\
-\pard\pardeftab720\sa240\partightenfactor0
+Installation
+    1.  Environment Setup: Ensure your server permissions allow for the creation of user-specific subdirectories as defined in the functions.php modifications.
+    2.  Theme: Select a wordpress theme (This project uses Twentytwentyfour)
+    3.  Functions.php: Copy the relevant code from the functions.php file in this repository into the one for your theme.
+    4.  Generate assets: Create video backgrounds and target images. Upload to /resources and /targets respectively
+    5.  Shortcodes: Use the custom shortcodes defined in the code to embed the game into your Elementor layouts.
 
-\f1\b0\fs24 \cf0 This repository includes:\
-\pard\tx220\tx720\pardeftab720\li720\fi-720\sa240\partightenfactor0
-\ls1\ilvl0
-\f3\b\fs26 \cf0 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
-\outl0\strokewidth0 \strokec2 functions.php
-\f1\b0\fs24 : Custom PHP hooks and directory-generation logic used in the WordPress 
-\f4\fs26 functions.php
-\f1\fs24  file.\
-\ls1\ilvl0
-\f3\b\fs26 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
-\outl0\strokewidth0 \strokec2 /custom/
-\f1\b0\fs24 : The core JavaScript (jQuery/Ajax) and CSS files that drive the EMDR game mechanics.\
-\ls1\ilvl0
-\f3\b\fs26 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
-\outl0\strokewidth0 \strokec2 /templates/
-\f1\b0\fs24 : The directory structures and entry files served to users upon registration.\
-\pard\pardeftab720\sa298\partightenfactor0
+Clinical Disclaimer
+This software is a tool for licensed clinicians who are (at least) “EMDR Trained” as defined by EMDRIA’s educational standards. It is not a substitute for professional clinical therapy. Users are responsible for ensuring their use of the tool complies with local regulations and ethical guidelines regarding trauma-informed care. Collingwood Enterprises, LLC disclaims any and all liability for the use of this software on oneself or with clients.
 
-\f0\b\fs36 \cf0 Prerequisites\
-\pard\pardeftab720\sa240\partightenfactor0
+Data Privacy
+While the code is open-source, any data stored in the WordPress database (user profiles, subscription details, or session logs) is private and is not governed by the AGPL. Ensure your hosting environment is HIPAA-compliant if you are storing protected health information (PHI).
 
-\f1\b0\fs24 \cf0 To run this tool, you will need a standard WordPress installation with the following environment:\
-\pard\tx220\tx720\pardeftab720\li720\fi-720\sa240\partightenfactor0
-\ls2\ilvl0
-\f0\b \cf0 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	1	}\expnd0\expndtw0\kerning0
-\outl0\strokewidth0 \strokec2 CMS
-\f1\b0 : {\field{\*\fldinst{HYPERLINK "https://wordpress.org/"}}{\fldrslt \cf3 \ul \ulc3 \strokec3 WordPress}}\
-\ls2\ilvl0
-\f0\b \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	2	}\expnd0\expndtw0\kerning0
-\outl0\strokewidth0 \strokec2 Theme
-\f1\b0 : Twenty Twenty-Four (or a child theme thereof)\
-\ls2\ilvl0
-\f0\b \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	3	}\expnd0\expndtw0\kerning0
-\outl0\strokewidth0 \strokec2 Page Builder
-\f1\b0 : Elementor\
-\ls2\ilvl0
-\f0\b \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	4	}\expnd0\expndtw0\kerning0
-\outl0\strokewidth0 \strokec2 Membership/Subscription
-\f1\b0 : {\field{\*\fldinst{HYPERLINK "https://www.paidmembershipspro.com/"}}{\fldrslt \cf3 \ul \ulc3 \strokec3 Paid Memberships Pro}}\cf3 \ul \ulc3 \strokec3 \
-\pard\tx220\tx720\pardeftab720\li720\fi-720\sa240\partightenfactor0
-\ls2\ilvl0\cf0 \kerning1\expnd0\expndtw0 \ulnone \outl0\strokewidth0 {\listtext	5	}
-\f0\b Some version of Jquery.min.js
-\f1\b0 . Place it in custom/resources/scripts.\expnd0\expndtw0\kerning0
-\outl0\strokewidth0 \strokec2 \
-\pard\pardeftab720\sa298\partightenfactor0
-
-\f0\b\fs36 \cf0 Installation
-\f1\b0\fs24 \
-\pard\tx220\tx720\pardeftab720\li720\fi-720\sa240\partightenfactor0
-\ls3\ilvl0
-\f0\b \cf0 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	1.	}\expnd0\expndtw0\kerning0
-\outl0\strokewidth0 \strokec2 Environment Setup
-\f1\b0 : Ensure your server permissions allow for the creation of user-specific subdirectories as defined in the 
-\f4\fs26 functions.php
-\f1\fs24  modifications.\
-\ls3\ilvl0\kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	2.	}
-\f0\b Theme:
-\f1\b0  Select a wordpress theme (This project uses Twentytwentyfour)\expnd0\expndtw0\kerning0
-\outl0\strokewidth0 \strokec2 \
-\ls3\ilvl0\kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	3.	}
-\f0\b Functions.php:
-\f1\b0  Copy the relevant code from the functions.php file in this repository into the one for your theme.\
-{\listtext	4.	}
-\f0\b Generate assets: 
-\f1\b0 Create
-\f0\b  
-\f1\b0 video backgrounds and target images. Upload to /resources and /targets respectively\expnd0\expndtw0\kerning0
-\outl0\strokewidth0 \strokec2 \
-\ls3\ilvl0
-\f0\b \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	
-\f1\b0 5
-\f0\b .	}\expnd0\expndtw0\kerning0
-\outl0\strokewidth0 \strokec2 Shortcodes
-\f1\b0 : Use the custom shortcodes defined in the code to embed the game into your Elementor layouts.\
-\pard\pardeftab720\sa298\partightenfactor0
-
-\f0\b\fs36 \cf0 Clinical Disclaimer\
-\pard\pardeftab720\sa240\partightenfactor0
-
-\f1\b0\fs24 \cf0 This software is a tool for licensed clinicians who are (at least) \'93EMDR Trained\'94 as defined by EMDRIA\'92s educational standards. It is not a substitute for professional clinical therapy. Users are responsible for ensuring their use of the tool complies with local regulations and ethical guidelines regarding trauma-informed care. Collingwood Enterprises, LLC disclaims any and all liability for the use of this software on oneself or with clients.\
-\pard\pardeftab720\sa298\partightenfactor0
-
-\f0\b\fs36 \cf0 Data Privacy\
-\pard\pardeftab720\sa240\partightenfactor0
-
-\f1\b0\fs24 \cf0 While the code is open-source, any data stored in the WordPress database (user profiles, subscription details, or session logs) is 
-\f0\b private
-\f1\b0  and is not governed by the AGPL. Ensure your hosting environment is HIPAA-compliant if you are storing protected health information (PHI).\
-}
