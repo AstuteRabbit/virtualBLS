@@ -1,0 +1,1561 @@
+Virtual BLS – Complete Source Code
+Copyright (C) Collingwood Enterprises LLC
+Licensed under the GNU General Public License v3 or later
+See COPYING.txt for full license text.
+
+================================================================================
+TABLE OF CONTENTS
+================================================================================
+ 1.  functions.php
+ 2.  Templates/bls.php
+ 3.  Templates/functions.php
+ 4.  Templates/get-settings.php
+ 5.  Templates/settings.php
+ 6.  Templates/status.php
+ 7.  Templates/update-settings.php
+ 8.  custom/includes/blsBody.php
+ 9.  custom/includes/blsHead.php
+10.  custom/includes/settingsBody.php
+11.  custom/includes/settingsHead.php
+12.  custom/resources/scripts/applySettings.js
+13.  custom/resources/scripts/checkStatus.js
+14.  custom/resources/scripts/form.js
+15.  custom/resources/scripts/pageLink.js
+16.  custom/resources/scripts/script.js
+17.  custom/resources/scripts/settings.js
+18.  custom/resources/scripts/status.js
+19.  custom/resources/scripts/style.css
+
+================================================================================
+FILE 1: functions.php
+================================================================================
+<?php
+/*
+The rest of Twenty Twenty-Four functions and definitions Goes here
+ */
+
+//The code from this point on is part of Virtual BLS.
+//Virtual BLS is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+//Virtual BLS is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+//You should have received a copy of the GNU General Public License along with Virtual BLS. If not, see <https://www.gnu.org/licenses/>
+
+// Start PHP session early so the session cookie is set before any output
+add_action('init', 'vbls_start_session', 1);
+function vbls_start_session() {
+    if (!session_id()) {
+        session_start();
+    }
+}
+
+add_action('user_register', 'generate_custom_pages', 10, 1);
+
+function generate_custom_pages($user_id) {
+    $user = get_userdata($user_id);
+    // Use wp-content/themes/users instead of uploads
+    $users_root = WP_CONTENT_DIR . '/themes/users';
+    wp_mkdir_p($users_root);
+    $user_dir = $users_root . '/user_' . $user_id;
+    wp_mkdir_p($user_dir);
+
+    // Generate settings.php
+    $settings_content = file_get_contents(get_template_directory() . '/templates/settings.php');
+    file_put_contents($user_dir . '/settings.php', $settings_content);
+
+    // Generate bls.php
+    $activity_content = file_get_contents(get_template_directory() . '/templates/bls.php');
+    file_put_contents($user_dir . '/bls.php', $activity_content);
+
+    // Generate get-settings.php
+    $get_settings_content = file_get_contents(get_template_directory() . '/templates/get-settings.php');
+    file_put_contents($user_dir . '/get-settings.php', $get_settings_content);
+
+    // Generate update-settings.php
+    $update_settings_content = file_get_contents(get_template_directory() . '/templates/update-settings.php');
+    file_put_contents($user_dir . '/update-settings.php', $update_settings_content);
+
+    // Generate status.php
+    $status_content = file_get_contents(get_template_directory() . '/templates/status.php');
+    file_put_contents($user_dir . '/status.php', $status_content);
+}
+
+// Delete user custom pages directory when a WordPress user account is deleted
+
+function cleanup_user_custom_pages($user_id, $level_id = null, $cancel_level = null) {
+	$user_id = intval($user_id);
+	if ($user_id <= 0) {
+		return;
+	}
+
+	$users_root = WP_CONTENT_DIR . '/themes/users';
+	$user_dir = $users_root . '/user_' . $user_id;
+
+	if (!is_dir($user_dir)) {
+		return;
+	}
+
+	require_once ABSPATH . 'wp-admin/includes/file.php';
+
+	if (!function_exists('WP_Filesystem') || !WP_Filesystem()) {
+		error_log('WP_Filesystem init failed while deleting user directory for user ID: ' . $user_id);
+		return;
+	}
+
+	global $wp_filesystem;
+	if (empty($wp_filesystem) || !$wp_filesystem->is_dir($user_dir)) {
+		return;
+	}
+
+	if ($wp_filesystem->delete($user_dir, true)) {
+		error_log('User directory deleted for user ID: ' . $user_id);
+	} else {
+		error_log('Failed to delete user directory for user ID: ' . $user_id);
+	}
+}
+
+add_action('deleted_user', 'cleanup_user_custom_pages', 10, 1);
+add_action('wpmu_delete_user', 'cleanup_user_custom_pages', 10, 1);
+
+function get_user_custom_pages_urls($user_id) {
+    $user_dir = 'user_' . $user_id;
+    // Build URLs from wp-content/themes/users
+    $base_url = content_url('themes/users/' . $user_dir);
+
+    return array(
+        'settings'      => $base_url . '/settings.php',
+        'bls'           => $base_url . '/bls.php',
+        'get_settings'  => $base_url . '/get-settings.php',
+        'update_settings'=> $base_url . '/update-settings.php',
+        'status'        => $base_url . '/status.php'
+    );
+}
+
+add_shortcode('user_custom_pages', 'display_user_custom_pages');
+    
+function display_user_custom_pages() {
+    if (!is_user_logged_in()) {
+        return 'Please log in to virtualBLS.net to view your custom pages.';
+    }
+
+		// Generate an access token for the custom pages
+		$_SESSION['settings_page_token'] = bin2hex(random_bytes(32));
+		$_SESSION['settings_page_token_time'] = time();
+
+    $user_id = get_current_user_id();
+    $urls = get_user_custom_pages_urls($user_id);
+
+	$output = '<hr><br />';
+    $output .= '<h3>Start a Session</h3>';
+
+    $output .= '<a href="' . esc_url($urls['settings']) . '" target="_blank"><button style="padding: 20px;
+margin: 30px;">Click here to start</button></a></li>';
+	
+	$output .= '<hr><br />';
+
+    return $output;
+}
+
+wp_localize_script('vbls-inline', 'wpData', array(
+    // Point to wp-content/themes/users and provide per-user folders
+    'baseurl' => content_url('themes/users'),
+    'userDir' => is_user_logged_in() ? ('user_' . get_current_user_id()) : null
+));
+
+================================================================================
+FILE 2: Templates/bls.php
+================================================================================
+<?php
+
+//This file is part of Virtual BLS.
+//Virtual BLS is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+//Virtual BLS is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+//You should have received a copy of the GNU General Public License along with Virtual BLS. If not, see <https://www.gnu.org/licenses/>
+
+
+$expires = isset($_GET['expires']) ? intval($_GET['expires']) : 0;
+if ($expires === 0 || time() > $expires) {
+    http_response_code(410);
+    die('This session link has expired.');
+}
+?>
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+        <?php
+        include $_SERVER['DOCUMENT_ROOT'] . '/wp-content/custom/includes/blsHead.php';
+        ?>
+    </head>
+    <body>
+    <?php
+    include $_SERVER['DOCUMENT_ROOT'] . '/wp-content/custom/includes/blsBody.php';
+    ?> 
+    </body>
+    
+    <script src="../../../custom/resources/scripts/script.js" type="text/javascript"></script>
+    <script src="../../../custom/resources/scripts/applySettings.js" type="text/javascript"></script>
+    <script src="../../../custom/resources/scripts/status.js" type="text/javascript"></script>
+
+</html>
+
+================================================================================
+FILE 3: Templates/functions.php
+================================================================================
+<?php
+/*
+The rest of Twenty Twenty-Four functions and definitions goes here
+*/
+
+
+//This file is part of Virtual BLS.
+//Virtual BLS is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+//Virtual BLS is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+//You should have received a copy of the GNU General Public License along with Virtual BLS. If not, see <https://www.gnu.org/licenses/>
+
+// Start PHP session early so the session cookie is set before any output
+add_action('init', 'vbls_start_session', 1);
+function vbls_start_session() {
+    if (!session_id()) {
+        session_start();
+    }
+}
+
+add_action('user_register', 'generate_custom_pages', 10, 1);
+
+function generate_custom_pages($user_id) {
+    $user = get_userdata($user_id);
+    // Use wp-content/themes/users instead of uploads
+    $users_root = WP_CONTENT_DIR . '/themes/users';
+    wp_mkdir_p($users_root);
+    $user_dir = $users_root . '/user_' . $user_id;
+    wp_mkdir_p($user_dir);
+
+    // Generate settings.php
+    $settings_content = file_get_contents(get_template_directory() . '/templates/settings.php');
+    file_put_contents($user_dir . '/settings.php', $settings_content);
+
+    // Generate bls.php
+    $activity_content = file_get_contents(get_template_directory() . '/templates/bls.php');
+    file_put_contents($user_dir . '/bls.php', $activity_content);
+
+    // Generate get-settings.php
+    $get_settings_content = file_get_contents(get_template_directory() . '/templates/get-settings.php');
+    file_put_contents($user_dir . '/get-settings.php', $get_settings_content);
+
+    // Generate update-settings.php
+    $update_settings_content = file_get_contents(get_template_directory() . '/templates/update-settings.php');
+    file_put_contents($user_dir . '/update-settings.php', $update_settings_content);
+
+    // Generate status.php
+    $status_content = file_get_contents(get_template_directory() . '/templates/status.php');
+    file_put_contents($user_dir . '/status.php', $status_content);
+}
+
+// Delete user custom pages directory when a WordPress user account is deleted
+
+function cleanup_user_custom_pages($user_id, $level_id = null, $cancel_level = null) {
+	$user_id = intval($user_id);
+	if ($user_id <= 0) {
+		return;
+	}
+
+	$users_root = WP_CONTENT_DIR . '/themes/users';
+	$user_dir = $users_root . '/user_' . $user_id;
+
+	if (!is_dir($user_dir)) {
+		return;
+	}
+
+	require_once ABSPATH . 'wp-admin/includes/file.php';
+
+	if (!function_exists('WP_Filesystem') || !WP_Filesystem()) {
+		error_log('WP_Filesystem init failed while deleting user directory for user ID: ' . $user_id);
+		return;
+	}
+
+	global $wp_filesystem;
+	if (empty($wp_filesystem) || !$wp_filesystem->is_dir($user_dir)) {
+		return;
+	}
+
+	if ($wp_filesystem->delete($user_dir, true)) {
+		error_log('User directory deleted for user ID: ' . $user_id);
+	} else {
+		error_log('Failed to delete user directory for user ID: ' . $user_id);
+	}
+}
+
+add_action('deleted_user', 'cleanup_user_custom_pages', 10, 1);
+add_action('wpmu_delete_user', 'cleanup_user_custom_pages', 10, 1);
+
+function get_user_custom_pages_urls($user_id) {
+    $user_dir = 'user_' . $user_id;
+    // Build URLs from wp-content/themes/users
+    $base_url = content_url('themes/users/' . $user_dir);
+
+    return array(
+        'settings'      => $base_url . '/settings.php',
+        'bls'           => $base_url . '/bls.php',
+        'get_settings'  => $base_url . '/get-settings.php',
+        'update_settings'=> $base_url . '/update-settings.php',
+        'status'        => $base_url . '/status.php'
+    );
+}
+
+add_shortcode('user_custom_pages', 'display_user_custom_pages');
+    
+function display_user_custom_pages() {
+    if (!is_user_logged_in()) {
+        return 'Please log in to virtualBLS.net to view your custom pages.';
+    }
+
+		// Generate an access token for the custom pages
+		$_SESSION['settings_page_token'] = bin2hex(random_bytes(32));
+		$_SESSION['settings_page_token_time'] = time();
+
+    $user_id = get_current_user_id();
+    $urls = get_user_custom_pages_urls($user_id);
+
+	$output = '<hr><br />';
+    $output .= '<h3>Start a Session</h3>';
+
+    $output .= '<a href="' . esc_url($urls['settings']) . '" target="_blank"><button style="padding: 20px;
+margin: 30px;">Click here to start</button></a></li>';
+	
+	$output .= '<hr><br />';
+
+    return $output;
+}
+
+wp_localize_script('vbls-inline', 'wpData', array(
+    // Point to wp-content/themes/users and provide per-user folders
+    'baseurl' => content_url('themes/users'),
+    'userDir' => is_user_logged_in() ? ('user_' . get_current_user_id()) : null
+));
+
+================================================================================
+FILE 4: Templates/get-settings.php
+================================================================================
+<?php
+//This file is part of Virtual BLS.
+//Virtual BLS is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+//Virtual BLS is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+//You should have received a copy of the GNU General Public License along with Virtual BLS. If not, see <https://www.gnu.org/licenses/>
+
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    if (file_exists('settings.json')) {
+        $json = file_get_contents('settings.json');
+        echo $json;
+    } else {
+        echo json_encode([]);
+    }
+}
+
+================================================================================
+FILE 5: Templates/settings.php
+================================================================================
+<?php
+//This file is part of Virtual BLS.
+//Virtual BLS is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+//Virtual BLS is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+//You should have received a copy of the GNU General Public License along with Virtual BLS. If not, see <https://www.gnu.org/licenses/>
+
+
+      // Make sure the user is coming from WordPress and has a valid session.
+
+      if (!session_id()) {
+            session_start();
+      }
+
+      $token_is_valid = isset($_SESSION['settings_page_token']) &&
+            isset($_SESSION['settings_page_token_time']) &&
+            (time() - $_SESSION['settings_page_token_time']) < 3600;
+
+      if (!$token_is_valid) {
+            http_response_code(403);
+            die('Access Denied. Please log in to virtualBLS.net to access this page through the provided links.');
+      }
+      ?>
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <?php
+    include $_SERVER['DOCUMENT_ROOT'] . '/wp-content/custom/includes/settingsHead.php';
+    ?>
+  </head>
+  <body id="settingsBody">
+  <?php
+  include $_SERVER['DOCUMENT_ROOT'] . '/wp-content/custom/includes/settingsBody.php';
+  ?>
+  </body>
+  <script src="../../../custom/resources/scripts/form.js" type="text/javascript"></script>
+  <script src="../../../custom/resources/scripts/script.js" type="text/javascript"></script>
+  <script>
+      $(document).ready(function(){
+          document.getElementById("year").innerHTML = new Date().getFullYear();
+          document.getElementById("year2").innerHTML = new Date().getFullYear();    
+      });
+  </script>
+  <script src="../../../custom/resources/scripts/pageLink.js"></script>
+  <script src="../../../custom/resources/scripts/checkStatus.js"></script>
+
+</html>
+
+================================================================================
+FILE 6: Templates/status.php
+================================================================================
+<?php
+//This file is part of Virtual BLS.
+//Virtual BLS is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+//Virtual BLS is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+//You should have received a copy of the GNU General Public License along with Virtual BLS. If not, see <https://www.gnu.org/licenses/>
+
+session_start();
+
+// Check if it's a POST request to update the status
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $timeout = isset($_POST['timeout']) ? intval($_POST['timeout']) : 10; // Default to 10 seconds
+    $_SESSION['buttonClicked'] = true;
+    $_SESSION['timeout'] = $timeout;
+    $_SESSION['timestamp'] = time(); // Store the current time
+    echo json_encode(['success' => true]);
+    exit;
+}
+
+// Check if it's a GET request to retrieve the status
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    $buttonClicked = isset($_SESSION['buttonClicked']) ? $_SESSION['buttonClicked'] : false;
+    $timeout = isset($_SESSION['timeout']) ? $_SESSION['timeout'] : 0;
+    $timestamp = isset($_SESSION['timestamp']) ? $_SESSION['timestamp'] : 0;
+
+    // Check if the timeout has expired
+    if ($buttonClicked && (time() - $timestamp) > $timeout) {
+        $_SESSION['buttonClicked'] = false; // Reset the status
+        $buttonClicked = false;
+    }
+
+    echo json_encode(['buttonClicked' => $buttonClicked, 'timeout' => $timeout]);
+    exit;
+}
+?>
+
+================================================================================
+FILE 7: Templates/update-settings.php
+================================================================================
+<?php
+
+//This file is part of Virtual BLS.
+//Virtual BLS is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+//Virtual BLS is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+//You should have received a copy of the GNU General Public License along with Virtual BLS. If not, see <https://www.gnu.org/licenses/>
+
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $settings = [
+        'timeout' => $_POST['timeout'] ?? '',
+        'background' => $_POST['background'] ?? '',
+        'target' => $_POST['target'] ?? '',
+        'refresh' => $_POST['refresh'] ?? false
+
+    ];
+    
+    $json = json_encode($settings);
+    file_put_contents('settings.json', $json);
+    
+    echo json_encode(['success' => true]);
+}
+
+================================================================================
+FILE 8: custom/includes/blsBody.php
+================================================================================
+<!--
+This file is part of Virtual BLS.
+Virtual BLS is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+Virtual BLS is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+You should have received a copy of the GNU General Public License along with Virtual BLS. If not, see <https://www.gnu.org/licenses/>
+-->
+<!-- video backgrounds -->
+<video id="space" src="https://virtualbls.net/wp-content/custom/resources/background.mp4" autoplay muted loop></video>
+<video id="asteroids" src="https://virtualbls.net/wp-content/custom/resources/asteroids.mp4" autoplay muted loop></video>
+
+        <!-- /video background -->
+        <!-- Instructions for the client -->
+        <div id="startContainer">
+            <h1 id="instructions">Focus on your level of distress and tap/click on the targets as they appear</h1>
+            <button id="myButton">Start</button>
+            <h2 id="disclaimer">***For use only with a therapist present***</h2>
+            <p id="bottomYearName">&copy; <span id="year2"></span> Collingwood Enterprises LLC</p>
+        </div>
+        <!-- /Instructions -->
+        <input type="text" placeholder="Length of BLS in seconds" id="timeoutInput" style="display:none;">
+        <!-- The target elements -->
+        <div id="targets" style="display: none;">      
+            <div id="target1" onclick="target1click()">
+                <img class="target" alt="target" src="https://virtualbls.net/wp-content/custom/resources/targets/target.png" />
+            </div>
+            <div id="target2" onclick="target2click()" style="display:none;">
+                <img class="target" alt="target" src="https://virtualbls.net/wp-content/custom/resources/targets/target.png" />
+            </div> 
+        </div>
+        <!-- /Target Elements -->
+
+================================================================================
+FILE 9: custom/includes/blsHead.php
+================================================================================
+<!--
+This file is part of Virtual BLS.
+Virtual BLS is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+Virtual BLS is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+You should have received a copy of the GNU General Public License along with Virtual BLS. If not, see <https://www.gnu.org/licenses/>
+-->
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Virtual BLS</title>
+        <meta charset="utf-8" />
+        <script src="https://virtualbls.net/wp-content/custom/resources/scripts/jquery-3.7.1.min.js"></script> 
+        <!-- Make it live nicely on your home screen -->
+        <!-- Specify an icon later <link rel="shortcut icon" sizes="196x196" href="./favicon.png"> -->
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-title" content="Virtual BLS">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black">
+        <!-- /Home screen stuff -->
+        <link rel="stylesheet" type="text/css" href="https://virtualbls.net/wp-content/custom/resources/scripts/style.css" />
+        <!-- Ad-blocker warning script -->
+        <div id="adsbox" style="width:1px;height:1px;position:absolute;left:-9999px">ad</div>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+                function isAdBlocked() {
+                const el = document.getElementById('adsbox');
+                if (!el) return true; // removed by blocker
+                const style = window.getComputedStyle(el);
+                return style.display === 'none' || style.visibility === 'hidden';
+                }
+                if (isAdBlocked()) {
+                window.alert('For best results, please disable your ad-blocker for this site.');
+                } else {
+                const el = document.getElementById('adsbox');
+                if (el) el.remove();
+                }
+        });
+        </script>
+        <!-- /Ad-blocker warning script -->
+
+================================================================================
+FILE 10: custom/includes/settingsBody.php
+================================================================================
+<!--
+This file is part of Virtual BLS.
+Virtual BLS is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+Virtual BLS is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+You should have received a copy of the GNU General Public License along with Virtual BLS. If not, see <https://www.gnu.org/licenses/>
+-->
+<!-- Is the modal overlay neccesary without the T&C Modal? -->  
+<div id="modalOverlay"></div>
+  
+    
+    <div id="startContainer">
+        <h1>Virtual BLS (Beta)</h1>
+        <h3>Create Your Session using the form below</h3>
+        <h2 id="disclaimer">***For use only with a therapist present***</h2>
+        <p id="bottomYearName">&copy; <span id="year2"></span> Collingwood Enterprises LLC</p>
+    </div>
+    <div class="form-container">
+        <form id="settingsForm">
+            <label for="timeoutInput">Length of BLS (in seconds):</label>
+            <input type="number" id="timeout" name="timeout" required>
+            <br />
+            <label for="background">Background Options:</label>
+            <select id="background" name="background">
+                <option value="asteroids">Asteroids</option>
+                <option value="space">Outer Space</option> 
+                <hr /> 
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+                <hr />
+                <!--
+                Add at a later date
+                <option value="nature">Nature</option>
+                <option value="ocean">Ocean</option>
+                <option value="city">City</option>
+                -->
+                <option value="blue">Blue</option>
+                <option value="purple">Purple</option>
+                <option value="red">Red</option>
+                <option value="green">Green</option>
+                <option value="yellow">Yellow</option>
+                <option value="cyan">Cyan</option>
+                <option value="pink">Pink</option>
+                <option value="orange">Orange</option>
+                <option value="brown">Brown</option>
+                <option value="gray">Gray</option>
+                <option value="white">White</option>
+                <option value="black">Black</option>
+
+                
+                
+            </select>
+            <br />
+            <label for="target">Target Choice:</label>
+            <!-- Read-only display + hidden value; click display to open the modal -->
+            <input id="targetDisplay" type="text" readonly value="Crosshairs (Default)">
+            <input id="target" name="target" type="hidden" value="crosshairs">
+            <br />
+            <button id="submit" type="submit">Generate Session</button>
+            <div id="URL"></div>
+            <button id="copy">Copy Link to Send to Client</button>
+            <button id="start">Start Session in a New Tab</button>
+            <button id="stop">Stop BLS</button>
+            <p><a class="link" href="https://virtualbls.net/membership-account/">Back to my account page</a></p>
+        </form>
+    </div> 
+    <!--Target chooser modal -->
+    <div id="targetModal" class="modal" aria-hidden="true">
+      <div class="modal-content">
+        <h2>Select Target</h2>
+        <!-- Search input for filtering -->
+        <input type="text" id="targetSearch" placeholder="Search targets..." />
+        <div id="targetList"></div>
+        <button id="targetClose" type="button">Close</button>
+      </div>
+    </div>
+
+================================================================================
+FILE 11: custom/includes/settingsHead.php
+================================================================================
+<!--
+This file is part of Virtual BLS.
+Virtual BLS is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+Virtual BLS is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+You should have received a copy of the GNU General Public License along with Virtual BLS. If not, see <https://www.gnu.org/licenses/>
+-->
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+      <title>Virtual BLS</title>
+      <meta charset="utf-8" />
+      <script src="https://virtualbls.net/wp-content/custom/resources/scripts/jquery-3.7.1.min.js"></script> 
+      <!-- Make it live nicely on your home screen -->
+      <meta name="mobile-web-app-capable" content="yes">
+      <meta name="apple-mobile-web-app-title" content="Virtual BLS">
+      <meta name="apple-mobile-web-app-capable" content="yes">
+      <meta name="apple-mobile-web-app-status-bar-style" content="black">
+      <!-- /Home screen stuff -->
+      <link rel="stylesheet" type="text/css" href="https://virtualbls.net/wp-content/custom/resources/scripts/style.css" />
+
+================================================================================
+FILE 12: custom/resources/scripts/applySettings.js
+================================================================================
+//This file is part of Virtual BLS.
+//Virtual BLS is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+//Virtual BLS is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+//You should have received a copy of the GNU General Public License along with Virtual BLS. If not, see <https://www.gnu.org/licenses/>
+
+let settings = {};
+
+    function changeBackgroundColor(background) {
+        const body = document.querySelector('body');
+        const space = document.getElementById("space");
+        const asteroids = document.getElementById("asteroids");
+
+        switch(background) {
+            case 'light':
+                space.style.display = "none";
+                asteroids.style.display = "none";
+                body.style.backgroundColor = 'rgb(201, 198, 198)';
+                body.style.color = 'black';
+                break;
+            case 'dark':
+                space.style.display = "none";
+                asteroids.style.display = "none";
+                body.style.backgroundColor = 'rgb(62, 62, 62)';
+                break;
+            case 'space':
+                body.style.backgroundColor = 'black';
+                space.style.display = "block";
+                asteroids.style.display = "none";
+                break;
+            case 'asteroids':
+                body.style.backgroundColor = 'black';
+                space.style.display = "none";
+                asteroids.style.display = "block";
+                break;
+            case 'blue':
+                space.style.display = "none";
+                asteroids.style.display = "none";
+                body.style.backgroundColor = 'rgb(83, 151, 207)';
+                document.querySelector('#bottomYearName').style.setProperty('color', 'white', 'important'); 
+                break;
+            case 'purple':
+                space.style.display = "none";
+                asteroids.style.display = "none";
+                body.style.backgroundColor = 'rgb(140, 40, 120)';
+                document.querySelector('#bottomYearName').style.setProperty('color', 'white', 'important'); 
+                break;
+            case 'red':
+                space.style.display = "none";
+                asteroids.style.display = "none";
+                body.style.backgroundColor = 'rgb(230, 81, 81)';
+                document.querySelector('#bottomYearName').style.setProperty('color', 'white', 'important'); 
+                break;
+            case 'green':
+                space.style.display = "none";
+                asteroids.style.display = "none";
+                body.style.backgroundColor = 'rgb(0, 128, 0)';
+                document.querySelector('#bottomYearName').style.setProperty('color', 'white', 'important'); 
+                break;
+            case 'yellow':
+                space.style.display = "none";
+                asteroids.style.display = "none";
+                body.style.backgroundColor = 'rgb(255, 255, 0)';
+                body.style.setProperty('color', 'black', 'important');
+                document.querySelector('#startContainer').style.setProperty('color', 'black', 'important'); 
+                break;
+            case 'cyan':
+                space.style.display = "none";
+                asteroids.style.display = "none";
+                body.style.backgroundColor = 'rgba(0, 255, 255, 0.82)';
+                document.querySelector('#startContainer').style.setProperty('color', 'black', 'important');
+                break;
+            case 'pink':
+                space.style.display = "none";
+                asteroids.style.display = "none";
+                body.style.backgroundColor = 'rgb(255, 192, 203)';
+                body.style.setProperty('color', 'black', 'important');
+                document.querySelector('#startContainer').style.setProperty('color', 'black', 'important');
+                break;
+            case 'orange':
+                space.style.display = "none";
+                asteroids.style.display = "none";
+                body.style.backgroundColor = 'rgb(255, 165, 0)';
+                body.style.setProperty('color', 'black', 'important');
+                document.querySelector('#startContainer').style.setProperty('color', 'black', 'important');
+                break;
+            case 'brown':
+                space.style.display = "none";
+                asteroids.style.display = "none";
+                body.style.backgroundColor = 'rgb(165, 42, 42)';
+                body.style.setProperty('color', 'black', 'important');
+                document.querySelector('#startContainer').style.setProperty('color', 'black', 'important');
+                document.querySelector('#bottomYearName').style.setProperty('color', 'white', 'important'); 
+                break;
+            case 'gray':
+                space.style.display = "none";
+                asteroids.style.display = "none";
+                body.style.backgroundColor = 'rgb(128, 128, 128)';
+                document.querySelector('#bottomYearName').style.setProperty('color', 'white', 'important'); 
+                break;
+            case 'white':
+                space.style.display = "none";
+                asteroids.style.display = "none";
+                body.style.backgroundColor = 'rgb(255, 255, 255)';
+                body.style.setProperty('color', 'black', 'important');
+                document.querySelector('#startContainer').style.setProperty('color', 'black', 'important');
+                break;
+            case 'black': 
+                space.style.display = "none";
+                asteroids.style.display = "none";
+                body.style.backgroundColor = 'rgb(0, 0, 0)';
+                break; 
+            default:
+                body.style.backgroundColor = 'initial';
+                space.style.display = "block";
+                asteroids.style.display = "block";
+        }
+    }
+
+    function updateTargetImages(target) {
+        const targetElements = document.querySelectorAll('.target');
+        targetElements.forEach(targetElement => {
+            switch(target) {
+                case 'balls':
+                    targetElement.src = '../../../custom/resources/targets/ball.png'; 
+                    break;
+                case 'circles':
+                    targetElement.src = '../../../custom/resources/targets/circle.png';
+                    break;
+                case 'crosshairs':
+                    targetElement.src = '../../../custom/resources/targets/target.png';
+                    break;
+                case 'aliens': //delete in case of alien contact so we don't offend them
+                    targetElement.src = '../../../custom/resources/targets/alien.png';
+                    break;
+                case 'biohazard':
+                    targetElement.src = '../../../custom/resources/targets/biohazard.png'; 
+                    break;
+                case 'diamonds':
+                    targetElement.src = '../../../custom/resources/targets/diamond.png';
+                    break;
+                case 'spider':
+                    targetElement.src = '../../../custom/resources/targets/spider.png';
+                    break;
+                case 'star':
+                    targetElement.src = '../../../custom/resources/targets/star.png';
+                    break;
+                default:
+                    targetElement.src = '../../../custom/resources/targets/target.png';
+            }
+        });
+    }
+
+    function applySettings() {
+    if (settings.refresh) {
+        console.log('Refresh flag detected, reloading page in 1 second...');
+        setTimeout(function() {
+            location.reload();
+        }, 1000);
+    } 
+
+        // Apply background settings
+        changeBackgroundColor(settings.background);
+        console.log('Background color changed to:', settings.background);
+        // Apply target setting
+        updateTargetImages(settings.target);
+        console.log('Target updated to:', settings.target);
+        // Apply timeout setting
+        if (settings.timeout) {
+            document.getElementById('timeoutInput').value = settings.timeout;
+        }
+
+        console.log('Settings applied:', settings);
+        
+}
+ 
+function fetchSettings() {
+    $.ajax({
+        url: './get-settings.php',
+        method: 'GET',
+        success: function(response) {
+            settings = JSON.parse(response);
+            console.log('Fetched settings:', settings);
+            applySettings();
+        },
+        error: function(xhr, status, error) {
+            console.error('Error fetching settings:', error);
+        }
+    });
+}
+
+    // Fetch settings every 1 second.
+    setInterval(fetchSettings, 1000);
+
+
+    $(document).ready(function(){
+        fetchSettings();
+        document.getElementById("year").innerHTML = new Date().getFullYear();
+        document.getElementById("year2").innerHTML = new Date().getFullYear();    
+    });
+
+================================================================================
+FILE 13: custom/resources/scripts/checkStatus.js
+================================================================================
+//This file is part of Virtual BLS.
+//Virtual BLS is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+//Virtual BLS is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+//You should have received a copy of the GNU General Public License along with Virtual BLS. If not, see <https://www.gnu.org/licenses/>
+
+function checkStatus() {
+    // Poll the server for the button click status
+    $.ajax({
+        url: 'status.php',
+        method: 'GET',
+        success: function (response) {
+            const data = JSON.parse(response);
+            if (data.buttonClicked) {
+                const message = 'BLS In Progress!';
+                if (!document.getElementById('remoteMessage')) {
+                    $('#settingsForm').append(`<div style="font-weight:bold;" id="remoteMessage">${message}</div>`);
+                    console.log('Data Recieved and Message Added');
+                }
+
+                // Remove the message after the timeout
+                setTimeout(() => {
+                    $('#remoteMessage').remove();
+                }, data.timeout * 1000);
+            }
+        },
+        error: function () {
+            console.error('Failed to fetch status');
+        }
+    });
+}
+
+// Poll the server every second
+setInterval(checkStatus, 1000);
+
+================================================================================
+FILE 14: custom/resources/scripts/form.js
+================================================================================
+//This file is part of Virtual BLS.
+//Virtual BLS is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+//Virtual BLS is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+//You should have received a copy of the GNU General Public License along with Virtual BLS. If not, see <https://www.gnu.org/licenses/>
+
+const form = document.getElementById('settingsForm');
+const urlDisplay = document.getElementById('URL');
+const copy = document.getElementById("copy");
+const start = document.getElementById("start");
+const stop = document.getElementById("stop");
+
+form.addEventListener('submit', function(event) {
+    event.preventDefault(); // Prevent the default form submission
+    copy.style.display = 'block';
+    start.style.display = 'block';
+    stop.style.display = 'block';   
+   
+    
+    // Construct the URL
+    // Get current URL and remove 'settings.html' if present
+const currentUrl = window.location.href.replace('settings.php', '');
+
+// Add an expiration parameter for 2 hours
+const expires = Math.floor(Date.now() / 1000) + (2 * 60 * 60); 
+
+
+// Add 'bls.php' to the end
+const newUrl = `${currentUrl}bls.php?expires=${expires}`;
+
+// Update the content of urlDisplay element
+urlDisplay.textContent = newUrl;
+});
+
+copy.addEventListener("click", function() {
+    const copiedText = document.getElementById("URL").textContent;
+    const decodedText = decodeURIComponent(copiedText);
+    
+    navigator.clipboard.writeText(decodedText)
+        .then(() => {
+            alert("Text copied to clipboard");
+        })
+        .catch((err) => {
+            console.error("Failed to copy text: ", err);
+        });
+});
+
+start.addEventListener("click", function() {
+const encodedUrl = document.getElementById("URL").textContent;
+const decodedUrl = decodeURIComponent(encodedUrl);
+window.open(decodedUrl, '_blank');
+});
+
+//<!--   Target modal logic -->
+
+    //   Modal elements (overlay var renamed to avoid duplication)
+    const targetModal = document.getElementById('targetModal');
+    const targetOverlay = document.getElementById('modalOverlay'); 
+    const targetSearch = document.getElementById('targetSearch');
+    const targetList = document.getElementById('targetList');
+    const targetHidden = document.getElementById('target');
+    const targetDisplay = document.getElementById('targetDisplay');
+    const targetClose = document.getElementById('targetClose');
+ 
+    //   Large list of targets with PNG icons
+    const targetOptions = [
+      { value: 'crosshairs', label: 'Crosshairs (Default)', icon: '../../../custom/resources/targets/target.png' }, 
+      { value: 'balls', label: 'Balls', icon: '../../../custom/resources/targets/ball.png' },
+      { value: 'circles', label: 'Circles', icon: '../../../custom/resources/targets/circle.png' }, 
+      { value: 'aliens', label: 'Aliens', icon: '../../../custom/resources/targets/alien.png' },//delete this immediately in the event of alien contact
+      { value: 'biohazard', label: 'Biohazard Signs', icon: '../../../custom/resources/targets/biohazard.png' },
+      { value: 'diamonds', label: 'Diamonds', icon: '../../../custom/resources/targets/diamond.png' },
+      { value: 'spider', label: 'Spiders', icon: '../../../custom/resources/targets/spider.png' },
+      { value: 'star', label: 'Stars', icon: '../../../custom/resources/targets/star.png' },
+  
+      // CHANGE THE LINKS FOR THE IMAGES TO THE CORRECT ONES
+
+ 
+      
+    ];
+
+    //   Open/close functions (null-safe for search)
+    function openTargetModal() {
+      targetModal.style.display = 'block';
+      targetOverlay.style.display = 'block';
+      renderTargetList(targetSearch ? targetSearch.value : '');
+      if (targetSearch) targetSearch.focus();
+    }
+    function closeTargetModal() {
+      targetModal.style.display = 'none';
+      targetOverlay.style.display = 'none'; 
+    }
+
+  
+    //   Render filtered list with icons
+    function renderTargetList(query = '') {
+      const q = (query || '').toLowerCase();
+      targetList.innerHTML = '';
+      targetOptions
+        .filter(o => o.label.toLowerCase().includes(q) || o.value.toLowerCase().includes(q))
+        .forEach(o => {
+          const item = document.createElement('button');
+          item.className = 'target-item';
+          item.type = 'button';
+          item.setAttribute('role', 'button');
+          item.tabIndex = 0;
+
+          if (o.icon) {
+            const img = document.createElement('img'); //   PNG icon
+            img.src = o.icon;
+            img.alt = `${o.label} icon`;
+            img.className = 'target-icon';
+            img.loading = 'lazy';
+            item.appendChild(img);
+          }
+
+          const text = document.createElement('span');
+          text.className = 'target-label';
+          text.textContent = o.label;
+          item.appendChild(text);
+
+          item.addEventListener('click', () => {
+            targetHidden.value = o.value;
+            targetDisplay.value = o.label;
+            targetHidden.dispatchEvent(new Event('change', { bubbles: true }));// Trigger change for form submissions
+            closeTargetModal();
+          });
+          item.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') item.click();
+          });
+
+          targetList.appendChild(item);
+        });
+    }
+
+    //   Wire up events
+    targetDisplay.addEventListener('click', openTargetModal);
+    targetClose.addEventListener('click', closeTargetModal);
+    targetOverlay.addEventListener('click', closeTargetModal);
+    targetSearch.addEventListener('input', () => renderTargetList(targetSearch.value));
+
+================================================================================
+FILE 15: custom/resources/scripts/pageLink.js
+================================================================================
+//This file is part of Virtual BLS.
+//Virtual BLS is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+//Virtual BLS is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+//You should have received a copy of the GNU General Public License along with Virtual BLS. If not, see <https://www.gnu.org/licenses/>
+
+// Track if form has changed
+let formChanged = false;
+const settingsForm = document.getElementById('settingsForm');    
+
+function submitFormData() {
+    const formData = new FormData(settingsForm);
+    $.ajax({
+        url: './update-settings.php',
+        method: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(response) {
+            console.log('Settings updated successfully');
+        },
+        error: function(xhr, status, error) {
+            console.error('Error updating settings:', error);
+        }
+    });
+    formChanged = false;
+}
+
+// Listen for changes on the form
+settingsForm.addEventListener('input', function() {
+    formChanged = true;
+});
+settingsForm.addEventListener('change', function() {
+    formChanged = true;
+});
+
+// Submit on blur or after a short debounce
+settingsForm.addEventListener('blur', function(e) {
+    if (formChanged) {
+        submitFormData();
+    }
+}, true);
+
+// Submit when the user clicks the submit button   
+settingsForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    if (formChanged) {
+        submitFormData();
+    }
+});
+
+// Stop button logic to set refresh flag and trigger page reload in bls.php after 1 second, allowing form data to be re-submitted with refresh flag set to false. This ensures the page reloads with the latest settings applied.
+function blsRefreshed() {
+    const formData = new FormData();
+    formData.append('refresh', 'false');
+    $.ajax({
+        url: './update-settings.php',  
+        method: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(response) {
+            console.log('Refresh flag removed successfully');
+            // Wait 1 second before submitting form data
+            setTimeout(function() {
+                submitFormData();
+                console.log('form re-submitted');
+            }, 1000);
+        },
+        error: function(xhr, status, error) {
+            console.error('Error removing refresh flag:', error);
+        }
+    });
+    
+    
+}
+
+stop.onclick = function() {
+    const formData = new FormData();
+    formData.append('refresh', 'true');
+    $.ajax({
+        url: './update-settings.php',
+        method: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(response) {
+            console.log('Refresh flag set successfully');
+            // Wait 1 second before calling blsRefreshed
+            setTimeout(function() {
+                blsRefreshed();
+            }, 1000);
+        },
+        error: function(xhr, status, error) {
+            console.error('Error setting refresh flag:', error);
+        }
+    });
+    
+};
+
+================================================================================
+FILE 16: custom/resources/scripts/script.js
+================================================================================
+//This file is part of Virtual BLS.
+//Virtual BLS is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+//Virtual BLS is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+//You should have received a copy of the GNU General Public License along with Virtual BLS. If not, see <https://www.gnu.org/licenses/>
+
+//Some variables
+var button = document.getElementById('myButton');
+var targets = document.getElementById('targets');
+var instructions = document.getElementById('instructions');
+var disclaimer = document.getElementById('disclaimer');
+var textInput = document.getElementById('timeoutInput')
+const urlParams = new URLSearchParams(window.location.search);
+const timeoutFromUrl = urlParams.get('timeout');
+
+// Audio context for generating sounds
+var audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+// Function to play a tone with stereo panning
+function playTone(pan) {
+    // Create oscillator (sound generator)
+    var oscillator = audioContext.createOscillator();
+    oscillator.type = 'sine'; // sine wave (smooth tone)
+    oscillator.frequency.setValueAtTime(440, audioContext.currentTime); // 440 Hz (A4 note)
+    
+    // Create stereo panner
+    var panner = audioContext.createStereoPanner();
+    panner.pan.setValueAtTime(pan, audioContext.currentTime); // -1 = left, 1 = right
+    
+    // Create gain node for volume control
+    var gainNode = audioContext.createGain();
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime); // 30% volume
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2); // fade out
+    
+    // Connect: oscillator -> panner -> gain -> speakers
+    oscillator.connect(panner);
+    panner.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    // Play the sound
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.2); // stop after 0.2 seconds
+}
+
+// Score counter setup
+var counter = 0;
+var counterDiv = document.getElementById('counter');
+if (!counterDiv) {
+    counterDiv = document.createElement('div');
+    counterDiv.id = 'counter';
+    counterDiv.style.position = 'fixed';
+    counterDiv.style.top = '20px';
+    counterDiv.style.left = '50%';
+    counterDiv.style.transform = 'translateX(-50%)';
+    counterDiv.style.fontSize = '2em';
+    counterDiv.style.fontWeight = 'bold';
+    counterDiv.style.zIndex = '1000';
+    counterDiv.style.background = 'rgba(255,255,255,0.8)';
+    counterDiv.style.padding = '8px 24px';
+    counterDiv.style.borderRadius = '12px';
+    counterDiv.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+    counterDiv.style.display = 'none';
+    document.body.appendChild(counterDiv);
+}
+
+// Set the timeout duration from the URL parameters
+//if (timeoutFromUrl) {
+//    document.getElementById('timeoutInput').value = timeoutFromUrl;
+//}
+
+// Set the timeout duration from the URL parameter
+//const timeoutInput = document.getElementById('timeoutInput');
+
+//timeoutInput.addEventListener('input', function() {
+//    const newUrl = new URL(window.location.href);
+//    newUrl.searchParams.set('timeout', timeoutInput.value);
+//    window.history.replaceState(null, null, newUrl.toString());
+//});
+
+// Transition from the start button to the BLS interface
+button.addEventListener('click', function() {
+    targets.style.display = 'block';
+    button.style.display = 'none';
+    instructions.style.display = 'none';
+    disclaimer.style.display = 'none';
+    textInput.style.display = "none";
+
+    // Reset and show counter
+    counter = 0;
+    counterDiv.textContent = "Targets: 0";
+    counterDiv.style.display = 'block';
+
+    // Set a time limit for the BLS
+    const time = timeoutInput.value; //The timeout value
+    setTimeout(function() {
+        targets.style.display = 'none';
+        button.style.display = 'block';
+        counterDiv.style.display = 'none'; // Hide counter at end
+        alert("Round complete! Take a deep breath. Check in with your therapist.");
+    }, time * 1000); // convert seconds to milliseconds
+});
+
+
+// Behavior of the target elements
+function target1click() {
+    var target1 = document.getElementById("target1");
+    var target2 = document.getElementById("target2");
+
+    var top = Math.floor(Math.random() * (window.innerHeight - 200)); // generate a random y-coordinate value while ensuring that the target stays fully visible within the viewport
+    target1.style.display = "none"; // hide the clicked element
+    target1.style.top = top + "px"; // move the hidden element to the random y-coordinate value
+    target2.style.display = "block"; //display the other element
+
+    // Play sound panned to the left
+    playTone(-1);
+
+    // Increment counter
+    counter++;
+    counterDiv.textContent = "Targets: " + counter;
+}
+function target2click() {
+    var target1 = document.getElementById("target1");
+    var target2 = document.getElementById("target2");
+
+    var top = Math.floor(Math.random() * (window.innerHeight - 200)); // generate a random y-coordinate value while ensuring that the target stays fully visible within the viewport
+    target2.style.display = "none"; // hide the clicked element
+    target2.style.top = top + "px"; // move the hidden element to the random y-coordinate value
+    target1.style.display = "block"; // display the other element
+
+    // Play sound panned to the right
+    playTone(1);
+
+    // Increment counter
+    counter++;
+    counterDiv.textContent = "Targets: " + counter;
+}
+
+================================================================================
+FILE 17: custom/resources/scripts/settings.js
+================================================================================
+//This file is part of Virtual BLS.
+//Virtual BLS is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+//Virtual BLS is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+//You should have received a copy of the GNU General Public License along with Virtual BLS. If not, see <https://www.gnu.org/licenses/>
+
+//variables for the form
+const form = document.getElementById('settingsForm');
+const urlDisplay = document.getElementById('URL');
+
+const copy = document.getElementById("copy");
+const start = document.getElementById("start");
+
+//submit form data
+form.addEventListener('submit', function(event) {
+  event.preventDefault(); // Prevent the default form submission
+copy.style.display = 'block';
+start.style.display = 'block';
+  // Get the form values
+  const timeout = document.getElementById('timeout').value;
+  const background = document.getElementById('background').value;
+  const target = document.getElementById('target').value;
+});
+
+// copy URL to clipboard
+copy.addEventListener("click", function() {
+  const copiedText = document.getElementById("URL").textContent;
+  const decodedText = decodeURIComponent(copiedText);
+
+  navigator.clipboard.writeText(decodedText)
+    .then(() => {
+      alert("Text copied to clipboard");
+    })
+    .catch((err) => {
+      console.error("Failed to copy text: ", err);
+    });
+});
+//start the BLS activity in a new tab
+start.addEventListener("click", function() {
+  const encodedUrl = document.getElementById("URL").textContent;
+  const decodedUrl = decodeURIComponent(encodedUrl);
+
+  window.location.href = decodedUrl;
+});
+
+================================================================================
+FILE 18: custom/resources/scripts/status.js
+================================================================================
+//This file is part of Virtual BLS.
+//Virtual BLS is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+//Virtual BLS is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+//You should have received a copy of the GNU General Public License along with Virtual BLS. If not, see <https://www.gnu.org/licenses/>
+
+//Get the BLS time limit specified on the settings form
+$('#myButton').on('click', function () {
+    const timeout = $('#timeoutInput').val() || 10; // Default to 10 seconds if no input
+
+    // Send the button click status to the server
+    $.ajax({
+        url: 'status.php',
+        method: 'POST',
+        data: { timeout: timeout },
+        success: function () {
+            console.log('Button click sent to server');
+        },
+        error: function () {
+            console.error('Failed to send button click');
+        }
+    });
+});
+
+================================================================================
+FILE 19: custom/resources/scripts/style.css
+================================================================================
+/*
+
+This file is part of Virtual BLS.
+Virtual BLS is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+Virtual BLS is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+You should have received a copy of the GNU General Public License along with Virtual BLS. If not, see <https://www.gnu.org/licenses/>
+
+*/
+
+#settingsBody {
+    background-color: #373737 !important;
+}
+
+/* For things that need center-alignment */
+.alignCenter {
+    text-align: center !important;
+}
+
+/* Video Background */
+video {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 1 !important;
+}
+
+
+/* Modal styles */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 12; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; 
+    height: 100%;
+    overflow: auto;
+    background-color: rgb(0,0,0);
+    background-color: rgba(0,0,0,0.4); 
+  }
+
+  .yearName {
+    color:#858585;
+  }
+
+/* Styles for the settings form */
+.form-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh; /* Ensure the container takes up the full viewport height */
+    background-color: rgb(69, 69, 69);
+    color: white;
+    z-index: 1;
+}
+
+#settingsForm {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Center form elements horizontally */
+    background-color: rgb(57, 57, 57);
+    padding: 20px;
+    z-index: 1;
+    text-align: center;
+}
+
+#settingsForm > * {
+    margin-bottom: 10px; /* Add some spacing between form elements */
+}
+
+/* Hide the copy and start buttons until they are needed */
+#copy {
+    display:none;
+}
+
+#start {
+    display:none;
+}
+
+#stop {
+    display:none;
+}
+
+/* Client Instructions */
+#startContainer {
+    position: absolute;
+    top: 0px;
+    bottom: 0px;
+    left: 0px;
+    right: 0px;
+    color:white;
+    text-align: center;
+    z-index: 1;
+}
+
+#startContainer a {
+    color:#81abf8;
+}
+
+.link {
+    color:#81abf8;
+}
+
+#startContainer h1 {
+    z-index: 9 !important;
+    position: relative;
+}
+#startContainer h2 {
+    z-index: 9 !important;
+    position: absolute;
+    bottom: 20px;
+    left: 0px;
+    right: 0px;
+}
+
+#timeoutInput {
+    z-index: 10 !important;
+    position:absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -500%);
+}
+
+#myButton {
+    position: absolute;
+    z-index: 10 !important;
+    top: 50%;
+    left: 50%;
+    padding: 40px;
+    transform: translate(-50%, -50%);
+}
+/* /Client Instructions */
+
+
+/* The Target Elements */
+#targets {
+    position: absolute;
+    top: 0px;
+    bottom: 0px;
+    left: 0px;
+    right: 0px;
+    z-index: 10 !important;
+}
+#target1 {
+    /*float:left;*/
+    color:white;
+    position:absolute;
+    left:50px;
+}
+#target2 {
+    /*float:right;*/
+    color:white;
+    position:absolute;
+    right: 50px;
+}
+.target {
+    height:250px;
+    width:250px;
+}
+/* /The Target Elements */
+
+/* Attach the current year to the bottom of the page */
+#bottomYearName {
+    position: absolute;
+    bottom: 0px;
+    left: 50%;
+    bottom: 0;
+    transform: translateX(-50%);
+    z-index: 9;
+    color:#858585;
+}
+
+.modal-content {
+    background-color: rgb(57, 57, 57) !important;
+    text-align: center;
+    color: white;
+}
+
+#targetSearch {
+    width: 60%;
+    padding: 8px;
+    margin-bottom: 10px;
+}
+
+#targetList {
+    margin-left:20%;
+}
+
+.target-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px !important;
+    margin-bottom: 10px;
+    cursor: pointer;
+    background: transparent;
+    color: inherit;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 6px;
+    text-align: left;
+}
+.target-item:hover, .target-item:focus {
+    background: rgba(255,255,255,0.08);
+    outline: none;
+}
+.target-icon {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+}
+.target-label {
+    flex: 1;
+    text-align: left;
+}
+
+================================================================================
+END OF DOCUMENT
+================================================================================
