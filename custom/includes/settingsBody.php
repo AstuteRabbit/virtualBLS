@@ -12,7 +12,7 @@ You should have received a copy of the GNU General Public License along with Vir
         <h1>Virtual BLS (Beta)</h1>
         <h3>Create Your Session using the form below</h3>
         <h2 id="disclaimer">***For use only with a therapist present***</h2>
-        <p id="bottomYearName">&copy; <span id="year2"></span> Collingwood Enterprises LLC</p>
+        <p id="bottomYearName">&copy; <span id="year2"></span> Collingwood Enterprises LLC. Licensed under AGPLv3. [<a href="https://github.com/AstuteRabbit/virtualBLS">GitHub</a>]</p>
     </div>
     <div class="form-container">
         <form id="settingsForm">
