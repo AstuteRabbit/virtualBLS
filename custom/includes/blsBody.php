@@ -14,7 +14,7 @@ You should have received a copy of the GNU General Public License along with Vir
             <h1 id="instructions">Focus on your level of distress and tap/click on the targets as they appear</h1>
             <button id="myButton">Start</button>
             <h2 id="disclaimer">***For use only with a therapist present***</h2>
-            <p id="bottomYearName">&copy; <span id="year2"></span> Collingwood Enterprises LLC</p>
+            <p id="bottomYearName">&copy; <span id="year2"></span> Collingwood Enterprises LLC. Licensed under AGPLv3. [<a href="https://github.com/AstuteRabbit/virtualBLS">GitHub</a>]</p>
         </div>
         <!-- /Instructions -->
         <input type="text" placeholder="Length of BLS in seconds" id="timeoutInput" style="display:none;">
