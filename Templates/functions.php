@@ -46,6 +46,10 @@ function generate_custom_pages($user_id) {
     // Generate status.php
     $status_content = file_get_contents(get_template_directory() . '/templates/status.php');
     file_put_contents($user_dir . '/status.php', $status_content);
+
+    // Generate heartbeat.php
+    $heartbeat_content = file_get_contents(get_template_directory() . '/templates/heartbeat.php');
+    file_put_contents($user_dir . '/heartbeat.php', $heartbeat_content);
 }
 
 // Delete user custom pages directory when a WordPress user account is deleted
@@ -95,7 +99,9 @@ function get_user_custom_pages_urls($user_id) {
         'bls'           => $base_url . '/bls.php',
         'get_settings'  => $base_url . '/get-settings.php',
         'update_settings'=> $base_url . '/update-settings.php',
-        'status'        => $base_url . '/status.php'
+        'status'        => $base_url . '/status.php',
+        'heartbeat'     => $base_url . '/heartbeat.php'
+
     );
 }
 
