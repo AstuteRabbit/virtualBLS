@@ -24,8 +24,8 @@ const currentUrl = window.location.href.replace('settings.php', '');
 const expires = Math.floor(Date.now() / 1000) + (2 * 60 * 60); 
 
 
-// Add 'bls.php' to the end
-const newUrl = `${currentUrl}bls.php?expires=${expires}`;
+// Add 'bls.php' to the end as well as the URL expiration parameter
+const newUrl = `${currentUrl}bls.php?x=${expires}`;
 
 // Update the content of urlDisplay element
 urlDisplay.textContent = newUrl;
