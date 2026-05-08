@@ -23,6 +23,8 @@ You should have received a copy of the GNU General Public License along with Vir
             <select id="background" name="background">
                 <option value="asteroids">Asteroids</option>
                 <option value="space">Outer Space</option> 
+                <option value="clouds">Clouds</option>
+                <option value="waterfall">Waterfall</option>
                 <hr /> 
                 <option value="light">Light</option>
                 <option value="dark">Dark</option>
@@ -57,10 +59,10 @@ You should have received a copy of the GNU General Public License along with Vir
             <br />
             <button id="submit" type="submit">Generate Session</button>
             <div id="URL"></div>
-            <button id="copy">Copy Link to Send to Client</button>
-            <button id="start">Start Session in a New Tab</button>
-            <button id="stop">Stop BLS</button>
-            <p><a class="link" href="https://virtualbls.net/membership-account/">Back to my account page</a></p>
+            <button id="copy" type="button">Copy Link to Send to Client</button>
+            <button id="start" type="button">Start Session in a New Tab</button>
+            <button id="stop" type="button">Stop BLS</button>
+            <p><a class="link" href="https://staging1.virtualbls.net/membership-account/">Back to my account page</a></p>
         </form>
     </div> 
     <!--Target chooser modal -->

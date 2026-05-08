@@ -17,9 +17,9 @@ if ($expires === 0 || time() > $expires) {
     include $_SERVER['DOCUMENT_ROOT'] . '/wp-content/custom/includes/blsBody.php';
     ?> 
     </body>
-    
-    <script src="../../../custom/resources/scripts/script.js" type="text/javascript"></script>
-    <script src="../../../custom/resources/scripts/applySettings.js" type="text/javascript"></script>
-    <script src="../../../custom/resources/scripts/status.js" type="text/javascript"></script>
+    <?php $assetVersion = time(); ?>
+    <script src="../../../custom/resources/scripts/script.js?v=<?php echo $assetVersion; ?>" type="text/javascript"></script>
+    <script src="../../../custom/resources/scripts/applySettings.js?v=<?php echo $assetVersion; ?>" type="text/javascript"></script>
+    <script src="../../../custom/resources/scripts/status.js?v=<?php echo $assetVersion; ?>" type="text/javascript"></script>
 
 </html>

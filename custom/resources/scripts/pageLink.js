@@ -7,6 +7,24 @@
 let formChanged = false;
 const settingsForm = document.getElementById('settingsForm');    
 
+function getStatusKey() {
+    return localStorage.getItem('vbStatusKey') || '';
+}
+
+function clearInProgressStatus() {
+    const statusKey = getStatusKey();
+    if (!statusKey) {
+        return;
+    }
+
+    $.ajax({
+        url: 'status.php',
+        method: 'POST',
+        dataType: 'json',
+        data: { action: 'stop', statusKey: statusKey }
+    });
+}
+
 function submitFormData() {
     const formData = new FormData(settingsForm);
     $.ajax({
@@ -75,6 +93,9 @@ function blsRefreshed() {
 }
 
 stop.onclick = function() {
+    clearInProgressStatus();
+    $('#remoteMessage').remove();
+
     const formData = new FormData();
     formData.append('refresh', 'true');
     $.ajax({

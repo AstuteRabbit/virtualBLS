@@ -9,6 +9,14 @@ const copy = document.getElementById("copy");
 const start = document.getElementById("start");
 const stop = document.getElementById("stop");
 
+function generateStatusKey() {
+  if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+    return window.crypto.randomUUID();
+  }
+
+  return 'k_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
+}
+
 form.addEventListener('submit', function(event) {
     event.preventDefault(); // Prevent the default form submission
     copy.style.display = 'block';
@@ -16,23 +24,32 @@ form.addEventListener('submit', function(event) {
     stop.style.display = 'block';   
    
     
-    // Construct the URL
-    // Get current URL and remove 'settings.html' if present
-const currentUrl = window.location.href.replace('settings.php', '');
+  // Construct URL
+  const baseUrl = new URL(window.location.href);
+  baseUrl.search = '';
+  baseUrl.hash = '';
+  baseUrl.pathname = baseUrl.pathname.replace(/settings\.php$/, '');
 
 // Add an expiration parameter for 2 hours
 const expires = Math.floor(Date.now() / 1000) + (2 * 60 * 60); 
 
+  const statusKey = generateStatusKey();
+  localStorage.setItem('vbStatusKey', statusKey);
+
 
 // Add 'bls.php' to the end as well as the URL expiration parameter
-const newUrl = `${currentUrl}bls.php?x=${expires}`;
+  const newUrl = `${baseUrl.toString()}bls.php?x=${expires}&k=${encodeURIComponent(statusKey)}`;
 
 // Update the content of urlDisplay element
 urlDisplay.textContent = newUrl;
 });
 
-copy.addEventListener("click", function() {
+copy.addEventListener("click", function(event) {
+  event.preventDefault();
     const copiedText = document.getElementById("URL").textContent;
+  if (!copiedText) {
+    return;
+  }
     const decodedText = decodeURIComponent(copiedText);
     
     navigator.clipboard.writeText(decodedText)
@@ -44,8 +61,12 @@ copy.addEventListener("click", function() {
         });
 });
 
-start.addEventListener("click", function() {
+start.addEventListener("click", function(event) {
+event.preventDefault();
 const encodedUrl = document.getElementById("URL").textContent;
+if (!encodedUrl) {
+  return;
+}
 const decodedUrl = decodeURIComponent(encodedUrl);
 window.open(decodedUrl, '_blank');
 });

@@ -7,7 +7,7 @@ You should have received a copy of the GNU General Public License along with Vir
 <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>Virtual BLS</title>
         <meta charset="utf-8" />
-        <script src="https://virtualbls.net/wp-content/custom/resources/scripts/jquery-3.7.1.min.js"></script> 
+        <script src="https://staging1.virtualbls.net/wp-content/custom/resources/scripts/jquery-3.7.1.min.js"></script> 
         <!-- Make it live nicely on your home screen -->
         <!-- Specify an icon later <link rel="shortcut icon" sizes="196x196" href="./favicon.png"> -->
         <meta name="mobile-web-app-capable" content="yes">
@@ -15,7 +15,7 @@ You should have received a copy of the GNU General Public License along with Vir
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-status-bar-style" content="black">
         <!-- /Home screen stuff -->
-        <link rel="stylesheet" type="text/css" href="https://virtualbls.net/wp-content/custom/resources/scripts/style.css" />
+        <link rel="stylesheet" type="text/css" href="https://staging1.virtualbls.net/wp-content/custom/resources/scripts/style.css" />
         <!-- Ad-blocker warning script -->
         <div id="adsbox" style="width:1px;height:1px;position:absolute;left:-9999px">ad</div>
         <script>

@@ -5,26 +5,28 @@ Virtual BLS is distributed in the hope that it will be useful, but WITHOUT ANY W
 You should have received a copy of the GNU General Public License along with Virtual BLS. If not, see <https://www.gnu.org/licenses/>
 -->
 <!-- video backgrounds -->
-<video id="space" src="https://virtualbls.net/wp-content/custom/resources/background.mp4" autoplay muted loop></video>
-<video id="asteroids" src="https://virtualbls.net/wp-content/custom/resources/asteroids.mp4" autoplay muted loop></video>
+<video id="space" src="https://staging1.virtualbls.net/wp-content/custom/resources/background.mp4" autoplay muted loop></video>
+<video id="asteroids" src="https://staging1.virtualbls.net/wp-content/custom/resources/asteroids.mp4" autoplay muted loop></video>
+<video id="clouds" src="https://staging1.virtualbls.net/wp-content/custom/resources/clouds.mp4" autoplay muted loop></video>
+<video id="waterfall" src="https://staging1.virtualbls.net/wp-content/custom/resources/waterfall.mp4" autoplay muted loop></video>
 
         <!-- /video background -->
-        <!-- Instructions for the client -->
+        <!-- Instructions for the clients -->
         <div id="startContainer">
             <h1 id="instructions">Focus on your level of distress and tap/click on the targets as they appear</h1>
             <button id="myButton">Start</button>
             <h2 id="disclaimer">***For use only with a therapist present***</h2>
-            <p id="bottomYearName">&copy; <span id="year2"></span> Collingwood Enterprises LLC. Licensed under AGPLv3. [<a href="https://github.com/AstuteRabbit/virtualBLS">GitHub</a>]</p>
+            <p class="blsBottomText" id="bottomYearName">&copy; <span id="year2"></span> Collingwood Enterprises LLC. Licensed under AGPLv3. [<a href="https://github.com/AstuteRabbit/virtualBLS">GitHub</a>]</p>
         </div>
         <!-- /Instructions -->
         <input type="text" placeholder="Length of BLS in seconds" id="timeoutInput" style="display:none;">
         <!-- The target elements -->
         <div id="targets" style="display: none;">      
             <div id="target1" onclick="target1click()">
-                <img class="target" alt="target" src="https://virtualbls.net/wp-content/custom/resources/targets/target.png" />
+                <img class="target" alt="target" src="https://staging1.virtualbls.net/wp-content/custom/resources/targets/target.png" />
             </div>
             <div id="target2" onclick="target2click()" style="display:none;">
-                <img class="target" alt="target" src="https://virtualbls.net/wp-content/custom/resources/targets/target.png" />
+                <img class="target" alt="target" src="https://staging1.virtualbls.net/wp-content/custom/resources/targets/target.png" />
             </div> 
         </div>
         <!-- /Target Elements -->

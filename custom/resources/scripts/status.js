@@ -3,15 +3,27 @@
 //Virtual BLS is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 //You should have received a copy of the GNU General Public License along with Virtual BLS. If not, see <https://www.gnu.org/licenses/>
 
+function getStatusKeyFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('k') || '';
+}
+
 //Get the BLS time limit specified on the settings form
 $('#myButton').on('click', function () {
     const timeout = $('#timeoutInput').val() || 10; // Default to 10 seconds if no input
+    const statusKey = getStatusKeyFromUrl();
 
-    // Send the button click status to the server
+    if (!statusKey) {
+        console.error('Missing status key in BLS URL.');
+        return;
+    }
+
+    // Send button click status to the server
     $.ajax({
         url: 'status.php',
         method: 'POST',
-        data: { timeout: timeout },
+        dataType: 'json',
+        data: { timeout: timeout, statusKey: statusKey },
         success: function () {
             console.log('Button click sent to server');
         },
