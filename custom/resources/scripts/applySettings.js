@@ -110,9 +110,9 @@ let settings = {};
                 body.style.backgroundColor = 'rgb(0, 0, 0)';
                 break; 
             default:
-                body.style.backgroundColor = 'initial';
-                space.style.display = "block";
-                asteroids.style.display = "block";
+                body.style.backgroundColor = 'rgb(0, 0, 0)'; //Default to black if no valid background is set
+                space.style.display = "none";
+                asteroids.style.display = "none";
         }
     }
 
