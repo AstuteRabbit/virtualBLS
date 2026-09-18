@@ -8,7 +8,8 @@ var button = document.getElementById('myButton');
 var targets = document.getElementById('targets');
 var instructions = document.getElementById('instructions');
 var disclaimer = document.getElementById('disclaimer');
-var textInput = document.getElementById('timeoutInput')
+var textInput = document.getElementById('timeoutInput');
+var countdownTimer = document.getElementById('countdownTimer');
 const urlParams = new URLSearchParams(window.location.search);
 const timeoutFromUrl = urlParams.get('timeout');
 
@@ -90,11 +91,33 @@ button.addEventListener('click', function() {
     counterDiv.style.display = 'block';
 
     // Set a time limit for the BLS
-    const time = timeoutInput.value; //The timeout value
+    const time = parseInt(timeoutInput.value, 10) || 10;
+    let remainingTime = time;
+
+    if (countdownTimer) {
+        countdownTimer.textContent = 'Time Left: ' + remainingTime + 's';
+        countdownTimer.style.display = 'block';
+    }
+
+    const countdownInterval = setInterval(function() {
+        remainingTime = Math.max(0, remainingTime - 1);
+        if (countdownTimer) {
+            countdownTimer.textContent = 'Time Left: ' + remainingTime + 's';
+        }
+
+        if (remainingTime <= 0) {
+            clearInterval(countdownInterval);
+        }
+    }, 1000);
+
     setTimeout(function() {
+        clearInterval(countdownInterval);
         targets.style.display = 'none';
         button.style.display = 'block';
         counterDiv.style.display = 'none'; // Hide counter at end
+        if (countdownTimer) {
+            countdownTimer.style.display = 'none';
+        }
         alert("Round complete! Take a deep breath. Check in with your therapist.");
     }, time * 1000); // convert seconds to milliseconds
 });
